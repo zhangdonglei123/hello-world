@@ -524,6 +524,9 @@ public class CompensateServiceSpringImpl extends GenericDaoHibernate<AcCompensat
 		Boolean overLimitFlag=false;
 		while (kindcodes.hasNext()) {
 			String kindcode = kindcodes.next();
+			if (DataDictionary.KINDCODE_20JS.equals(kindcode)) {
+				continue;
+			}
 			// 进行三者险计算
 			if (DataDictionary.KINDCODE_B.equals(kindcode)||DataDictionary.KINDCODE_20B.equals(kindcode)) {
 				overLimitFlag =  calculate_B_Survey(bivoList, lcItemKindList);
@@ -799,6 +802,25 @@ public class CompensateServiceSpringImpl extends GenericDaoHibernate<AcCompensat
 				}
 			}
 		  }
+		}
+		for (int i = bivoList.size()-1; i>=0 ;i--) {
+			AcpayItemVo jsAcpayItemVo = bivoList.get(i);
+			if (jsAcpayItemVo.getKindCode().equals(DataDictionary.KINDCODE_20JS)) {//驾意险有损失
+				if(jsAcpayItemVo.getIndemnityPaid()==null){
+					jsAcpayItemVo.setIndemnityPaid(0D);
+				}
+				for (int j = bivoList.size()-1; j>=0 ;j--) {
+					AcpayItemVo tempJsAcpayItemVo = bivoList.get(j);
+					if ((tempJsAcpayItemVo.getKindCode().equals(DataDictionary.KINDCODE_D3)||tempJsAcpayItemVo.getKindCode().equals(DataDictionary.KINDCODE_D4))
+					&&tempJsAcpayItemVo.getDefLossTaskId().equals(jsAcpayItemVo.getDefLossTaskId())){//驾意险有损失
+						jsAcpayItemVo.setIndemnityPaid(jsAcpayItemVo.getIndemnityPaid()+tempJsAcpayItemVo.getIndemnityPaid());
+					}
+				}
+				if(jsAcpayItemVo.getIndemnityPaid()==0D){
+					jsAcpayItemVo.setIndemnityPaid(jsAcpayItemVo.getSumLossAmount());
+				}
+				jsAcpayItemVo.setExceDeductKindPaid(0D);
+			}
 		}
 		
 		// 调整调整金额
@@ -6225,6 +6247,19 @@ public class CompensateServiceSpringImpl extends GenericDaoHibernate<AcCompensat
 
 	}
 
+	public List<AcpayItemVo> doInitJsPersonData(List<AcpayItemVo> bivoList){
+		List<AcpayItemVo> acpersonlossList =new ArrayList<AcpayItemVo>();
+		AcpayItemVo tempAcpayItemVo = new AcpayItemVo();
+		if(bivoList!=null){
+			for(AcpayItemVo acpayItemVo:bivoList){
+				if(DataDictionary.KINDCODE_D3.equals(acpayItemVo.getRiskCode())||DataDictionary.KINDCODE_D4.equals(acpayItemVo.getRiskCode())){
+					CommonMethod.copyObjectToObject(acpayItemVo, tempAcpayItemVo);
+					tempAcpayItemVo.setKindCode(DataDictionary.KINDCODE_20JS);
+				}
+			}
+		}
+		return acpersonlossList ;
+	}
 	/**
 	 * @Title: findKindCodeInMap
 	 * @Description: TODO(判断险别是否在投保)
@@ -6953,7 +6988,6 @@ public class CompensateServiceSpringImpl extends GenericDaoHibernate<AcCompensat
 			List<AcReportPropInfo> acReportPropInfoList,Map<String, String> kindCodeMap,List<AcPrepay> prepayList,
 			Boolean isPaidSelfLossFlag, AcClaim biClaim, String flag) {
 		List<AcCharge> chargeList = new ArrayList<AcCharge>();
-
 		// 互碰自赔
 		Map<BigDecimal, String> map = new HashMap<BigDecimal, String>();
 		if (isPaidSelfLossFlag) {
@@ -7953,6 +7987,24 @@ public class CompensateServiceSpringImpl extends GenericDaoHibernate<AcCompensat
 		}
 		return acCompensateBiList;
 	}
+	
+	/**
+
+	 * @description:TODO(查询驾意险理算书)
+	 * @author: 张东磊
+	 * @param bpmMainList
+	 * @return List<AcCompensate>
+	 * @date：2020-9-3下午4:06:22
+	 */
+	public List<AcCompensate> findJsCompensateByReportNo(List<ACBpmMain> bpmMainList){
+		List<AcCompensate> acCompensateJsList = new ArrayList<AcCompensate>();
+		for (ACBpmMain aCBpmMain : bpmMainList) {
+			if (BpmConstants.JSCOMPENSATE_NODEID.equals(aCBpmMain.getNodeId())) {
+				acCompensateJsList = this.findJsAccompensate(aCBpmMain);
+			}
+		}
+		return acCompensateJsList;		
+	}
 
 	/**
 	 * @Title: findBiCompensateByPayFlag
@@ -8061,14 +8113,23 @@ public class CompensateServiceSpringImpl extends GenericDaoHibernate<AcCompensat
 	 * @date Oct 9, 2012 2:32:19 PM
 	 */
 	private List<AcCompensate> findBiAccompensate(ACBpmMain aCBpmMain) {
-		String hql = " from AcCompensate where riskCode <> ? and reportNo =? and underwriteflag not in ('5','6')";
-		List<AcCompensate> compensateList = this.findAllByHql(hql, DataDictionary.RISKCODE_CI, aCBpmMain.getReportNo());
+		String hql = " from AcCompensate where riskCode <> ? and riskCode<> ? and reportNo =? and underwriteflag not in ('5','6')";
+		List<AcCompensate> compensateList = this.findAllByHql(hql, DataDictionary.RISKCODE_CI,DataDictionary.RISKCODE_0519, aCBpmMain.getReportNo());
 		if (compensateList == null) {
 			return new ArrayList<AcCompensate>();
 		}
 		return compensateList;
 	}
 
+	private List<AcCompensate> findJsAccompensate(ACBpmMain aCBpmMain) {
+		String hql = " from AcCompensate where riskCode = ? and reportNo =? and underwriteflag not in ('5','6')";
+		List<AcCompensate> compensateList = this.findAllByHql(hql, DataDictionary.RISKCODE_0519, aCBpmMain.getReportNo());
+		if (compensateList == null) {
+			return new ArrayList<AcCompensate>();
+		}
+		return compensateList;
+	}
+	/**
 	/**
 	 * @Title: submitUnderwrite
 	 * @Description: TODO(提交核赔关闭理算工作流)
@@ -11925,6 +11986,61 @@ public class CompensateServiceSpringImpl extends GenericDaoHibernate<AcCompensat
 					}
 				}
 			}
+		}
+	}
+	public void initNewJsList(List<AcpayItemVo> newBivoList,String reportNo) {
+		for(AcpayItemVo jslossVo :newBivoList){
+			BigDecimal deflossid= new BigDecimal(jslossVo.getLossItemName());
+			//得到车损信息
+			AcPersonTrackMain acpersontrackmain =personService.findAcPersonTrackMainById(deflossid);
+			jslossVo.setCompensateRate(100.0);
+			jslossVo.setAccessoriesFee(0.0);  //辅料费
+			jslossVo.setOuterRepairFee(0.0);//外修费用
+			jslossVo.setManagerFee(0.0);
+			jslossVo.setHourFee(0.0);
+			jslossVo.setMaterialFee(0.0);
+			jslossVo.setOtherFee(0.0);
+			jslossVo.setDutyDeductibleRate(0.0);
+			jslossVo.setAbsDeductibleRate(0.0);
+			jslossVo.setAbsDeductibleAmount(0.0);
+			jslossVo.setSumRealpay(0.0);
+			jslossVo.setExceDeductKindPaid(0.0);
+			jslossVo.setPreSinglePay(0.0);
+			jslossVo.setReportNo(reportNo);
+			jslossVo.setSumLossAmount(jslossVo.getSumLossAmount() != null ? jslossVo.getSumLossAmount() : 0.0);
+			jslossVo.setRescueFee(jslossVo.getSumLossAmount() != null ? jslossVo.getSumLossAmount() : 0.0);
+			jslossVo.setKindCode(DataDictionary.KINDCODE_20JS);
+			jslossVo.setLicenseNo(acpersontrackmain.getLicenseNo());
+			jslossVo.setReportCarInfoId(acpersontrackmain.getReportCarInfoId());
+			jslossVo.setLossItemName(acpersontrackmain.getPersonName());
+			jslossVo.setType(DataDictionary.ACPAYITEMVO_TYPE_PERSON);
+			jslossVo.setDefLossTaskId(acpersontrackmain.getId());
+			jslossVo.setLossAttrCode(acpersontrackmain.getLossAttrCode());
+			jslossVo.setLossAttrName(acpersontrackmain.getLossAttrName());
+			jslossVo.setRiskCode(DataDictionary.RISKCODE_CI);
+			jslossVo.setPersonName(acpersontrackmain.getPersonName());// 名字
+			jslossVo.setIdentifyNumber(acpersontrackmain.getIdentifyNumber());// 身份证号
+			jslossVo.setSex(acpersontrackmain.getPersonSex());// 性别
+			jslossVo.setAge(acpersontrackmain.getPersonAge());// 年龄
+			jslossVo.setLiabilityRate(acpersontrackmain.getLiabilityRate());// 赔偿责任比例
+			jslossVo.setShareRate(acpersontrackmain.getShareRate());// 赔偿分摊比例
+			jslossVo.setFromDeflossFlag("0");
+			AcPersonInjuryCharge personInjuryCharge =new AcPersonInjuryCharge();
+			personInjuryCharge.setFeeTypeCode("100");//费用类别，暂时取其他，后续待确认.......
+			personInjuryCharge.setSubFeeTypeCode("199");//费用类别，暂时取其他，后续待确认.......
+			String feeTypeName = "";
+			if (DataDictionary.ACPERSONLOSS_MEDICAL.equals(personInjuryCharge.getFeeTypeCode())) {
+				feeTypeName = "医疗费用";
+			} else {
+				feeTypeName = "死亡伤残费用";
+			}
+			// FeeTypeCode和人伤定损保持一致，分为医疗1、死亡2；
+			// SubFeeTypeCode进行汇总为医疗100、死亡200、精神 212；
+			jslossVo.setFeeTypeCode(personInjuryCharge.getFeeTypeCode());// 费用类型代码
+			jslossVo.setFeeTypeName(feeTypeName);// 费用类型名称
+			// 判断是否死亡损失
+			jslossVo.setSubFeeTypeCode(personInjuryCharge.getFeeTypeCode());// 医疗1
+			jslossVo.setSubFeeTypeName(feeTypeName);
 		}
 	}
 	/**
