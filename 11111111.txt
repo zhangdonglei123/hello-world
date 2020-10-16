@@ -7029,7 +7029,10 @@ public class CompensateServiceSpringImpl extends GenericDaoHibernate<AcCompensat
 			acCharge.setRejectAmount(0.0);
 			acCharge.setChargeName(DataDictionary.CHARGENAME_101);
 			acCharge.setChargeCode(DataDictionary.CHARGECODE_101);
-			acCharge.setKindCode(getDefaultSurveyRiskCode(acReportCarInfo, null, null, kindCodeMap, null, DataDictionary.RISK_SURVEY_FLAG_GG));
+			acCharge.setKindCode(this.getDefaultSurveyRiskCode(acReportCarInfo, null, null, kindCodeMap, null, DataDictionary.RISK_SURVEY_FLAG_GG));
+			if(acCharge.getKindCode()==null ||"".equals(acCharge.getKindCode())){
+				break;
+			}
 			acCharge.setFeeAmount(acReportCarInfo.getEstimatedFee() != null ? acReportCarInfo.getEstimatedFee() : 0.0);
 			acCharge.setChargeAmount(acReportCarInfo.getEstimatedFee()!= null ? acReportCarInfo.getEstimatedFee(): 0.0);
 			chargeList.add(acCharge);
@@ -13212,104 +13215,99 @@ public class CompensateServiceSpringImpl extends GenericDaoHibernate<AcCompensat
 						}
 					}
 				}
-				if(DataDictionary.RISK_SURVEY_FLAG_CI.equals(flag)){
-					if(DataDictionary.RISK_SURVEY_FLAG_GG.equals(flag)&& resultMap.containsKey(DataDictionary.KINDCODE_BZ)){
-						return DataDictionary.KINDCODE_BZ;
-					}else if(DataDictionary.RISK_SURVEY_FLAG_GG.equals(flag)&& resultMap.containsKey(DataDictionary.KINDCODE_20BZ)){
-						return DataDictionary.KINDCODE_20BZ;
-					}
-				}else{
-					if(DataDictionary.RISK_SURVEY_FLAG_GG.equals(flag)&& resultMap.containsKey(DataDictionary.KINDCODE_B)){
-						return DataDictionary.KINDCODE_B;
-					}else if(DataDictionary.RISK_SURVEY_FLAG_GG.equals(flag)&& resultMap.containsKey(DataDictionary.KINDCODE_A)){
-						return DataDictionary.KINDCODE_A;
-					}else if(DataDictionary.RISK_SURVEY_FLAG_GG.equals(flag)&& resultMap.containsKey(DataDictionary.KINDCODE_A1)){
-						return DataDictionary.KINDCODE_A1;
-					}else if(DataDictionary.RISK_SURVEY_FLAG_GG.equals(flag)&& resultMap.containsKey(DataDictionary.KINDCODE_20B)){
-						return DataDictionary.KINDCODE_20B;
-					}else if(DataDictionary.RISK_SURVEY_FLAG_GG.equals(flag)&& resultMap.containsKey(DataDictionary.KINDCODE_20A)){
-						return DataDictionary.KINDCODE_20A;
-					}
-				}
-				if(lossAttrCode.equals(DataDictionary.LOSSATTRCODE_ITEM_CAR)){
-					if(DataDictionary.SURVEY_DamageReasonCode_A06.equals(survey.getDamageReasonCode())){//自燃
-						if(resultMap.containsKey(DataDictionary.KINDCODE_E)){
-							return DataDictionary.KINDCODE_E;
-						}else if(resultMap.containsKey(DataDictionary.KINDCODE_Z)){
-							return DataDictionary.KINDCODE_Z;
-						}
-					}
-					if(DataDictionary.SURVEY_DamageReasonCode_A02.equals(survey.getDamageReasonCode())){//玻璃破碎
-						if(resultMap.containsKey(DataDictionary.KINDCODE_F)){
-							return DataDictionary.KINDCODE_F;
-						}
-					}
-					if(DataDictionary.SURVEY_DamageReasonCode_A03.equals(survey.getDamageReasonCode())){//车身划痕
-						if(resultMap.containsKey(DataDictionary.KINDCODE_L)){
-							return DataDictionary.KINDCODE_L;
-						}else if(resultMap.containsKey(DataDictionary.KINDCODE_20L)){
-							return DataDictionary.KINDCODE_20L;
-						}
-					}
-					if(DataDictionary.SURVEY_DamageReasonCode_A05.equals(survey.getDamageReasonCode())){//盗窃抢劫
-						if(resultMap.containsKey(DataDictionary.KINDCODE_G1)){
-							return DataDictionary.KINDCODE_G1;
-						}
-						if(resultMap.containsKey(DataDictionary.KINDCODE_20G1)){
-							return DataDictionary.KINDCODE_20G1;
-						}
-						if(resultMap.containsKey(DataDictionary.KINDCODE_G0)){
-							return DataDictionary.KINDCODE_G0;
-						}
-					}
+				if(DataDictionary.RISK_SURVEY_FLAG_GG.equals(flag)){
 					if(resultMap.containsKey(DataDictionary.KINDCODE_A)){
 						return DataDictionary.KINDCODE_A;
-					}
-					if(resultMap.containsKey(DataDictionary.KINDCODE_20A)){
+					}else if(resultMap.containsKey(DataDictionary.KINDCODE_A1)){
+						return DataDictionary.KINDCODE_A1;
+					}else if(resultMap.containsKey(DataDictionary.KINDCODE_20A)){
 						return DataDictionary.KINDCODE_20A;
-					}
-					
-				}
-				if(DataDictionary.RISK_SURVEY_FLAG_CI.equals(flag)){
-					if(resultMap.containsKey(DataDictionary.KINDCODE_BZ)){
-						return DataDictionary.KINDCODE_BZ;
-					}
-					if(resultMap.containsKey(DataDictionary.KINDCODE_20BZ)){
-						return DataDictionary.KINDCODE_20BZ;
-					}
-					if(!lossAttrCode.equals(DataDictionary.LOSSATTRCODE_ITEM_CAR)&&resultMap.containsKey(DataDictionary.KINDCODE_B)){//非标的车上物，三者车有损失，且存在B险，返回BZ
-						//调整下新旧条款的交强险险别
-						if(kindCodeMap.containsKey(DataDictionary.KINDCODE_20BZ)){
-							return DataDictionary.KINDCODE_20BZ;
-						}else{
-							return DataDictionary.KINDCODE_BZ;
-						}
-					}
-					if(!lossAttrCode.equals(DataDictionary.LOSSATTRCODE_ITEM_CAR)&&resultMap.containsKey(DataDictionary.KINDCODE_20B)){//非标的车上物，三者车有损失，且存在B险，返回BZ
-						//调整下新旧条款的交强险险别
-						if(kindCodeMap.containsKey(DataDictionary.KINDCODE_20BZ)){
-							return DataDictionary.KINDCODE_20BZ;
-						}else{
-							return DataDictionary.KINDCODE_BZ;
-						}
+					}else if(resultMap.containsKey(DataDictionary.KINDCODE_G1)){
+						return DataDictionary.KINDCODE_G1;
+					}else if(resultMap.containsKey(DataDictionary.KINDCODE_20G1)){
+						return DataDictionary.KINDCODE_20G1;
 					}
 				}else{
-					if(resultMap.containsKey(DataDictionary.KINDCODE_D4)){
-						return DataDictionary.KINDCODE_D4;
-					}else if(resultMap.containsKey(DataDictionary.KINDCODE_D3)){
-						return DataDictionary.KINDCODE_D3;
-					}else if(resultMap.containsKey(DataDictionary.KINDCODE_D2)){
-						return DataDictionary.KINDCODE_D2;
-					}else if(resultMap.containsKey(DataDictionary.KINDCODE_B)){
-						return DataDictionary.KINDCODE_B;
-					}else if(resultMap.containsKey(DataDictionary.KINDCODE_20D4)){
-						return DataDictionary.KINDCODE_20D4;
-					}else if(resultMap.containsKey(DataDictionary.KINDCODE_20D3)){
-						return DataDictionary.KINDCODE_20D3;
-					}else if(resultMap.containsKey(DataDictionary.KINDCODE_20D2)){
-						return DataDictionary.KINDCODE_20D2;
-					}else if(resultMap.containsKey(DataDictionary.KINDCODE_20B)){
-						return DataDictionary.KINDCODE_20B;
+					if(lossAttrCode.equals(DataDictionary.LOSSATTRCODE_ITEM_CAR)){
+						if(survey!=null &&DataDictionary.SURVEY_DamageReasonCode_A06.equals(survey.getDamageReasonCode())){//自燃
+							if(resultMap.containsKey(DataDictionary.KINDCODE_E)){
+								return DataDictionary.KINDCODE_E;
+							}else if(resultMap.containsKey(DataDictionary.KINDCODE_Z)){
+								return DataDictionary.KINDCODE_Z;
+							}
+						}
+						if(survey!=null &&DataDictionary.SURVEY_DamageReasonCode_A02.equals(survey.getDamageReasonCode())){//玻璃破碎
+							if(resultMap.containsKey(DataDictionary.KINDCODE_F)){
+								return DataDictionary.KINDCODE_F;
+							}
+						}
+						if(survey!=null &&DataDictionary.SURVEY_DamageReasonCode_A03.equals(survey.getDamageReasonCode())){//车身划痕
+							if(resultMap.containsKey(DataDictionary.KINDCODE_L)){
+								return DataDictionary.KINDCODE_L;
+							}else if(resultMap.containsKey(DataDictionary.KINDCODE_20L)){
+								return DataDictionary.KINDCODE_20L;
+							}
+						}
+						if(survey!=null &&DataDictionary.SURVEY_DamageReasonCode_A05.equals(survey.getDamageReasonCode())){//盗窃抢劫
+							if(resultMap.containsKey(DataDictionary.KINDCODE_G1)){
+								return DataDictionary.KINDCODE_G1;
+							}
+							if(resultMap.containsKey(DataDictionary.KINDCODE_20G1)){
+								return DataDictionary.KINDCODE_20G1;
+							}
+							if(resultMap.containsKey(DataDictionary.KINDCODE_G0)){
+								return DataDictionary.KINDCODE_G0;
+							}
+						}
+						if(resultMap.containsKey(DataDictionary.KINDCODE_A)){
+							return DataDictionary.KINDCODE_A;
+						}
+						if(resultMap.containsKey(DataDictionary.KINDCODE_20A)){
+							return DataDictionary.KINDCODE_20A;
+						}
+						
+					}
+					if(DataDictionary.RISK_SURVEY_FLAG_CI.equals(flag)){
+						if(resultMap.containsKey(DataDictionary.KINDCODE_BZ)){
+							return DataDictionary.KINDCODE_BZ;
+						}
+						if(resultMap.containsKey(DataDictionary.KINDCODE_20BZ)){
+							return DataDictionary.KINDCODE_20BZ;
+						}
+						if(!lossAttrCode.equals(DataDictionary.LOSSATTRCODE_ITEM_CAR)&&resultMap.containsKey(DataDictionary.KINDCODE_B)){//非标的车上物，三者车有损失，且存在B险，返回BZ
+							//调整下新旧条款的交强险险别
+							if(kindCodeMap.containsKey(DataDictionary.KINDCODE_20BZ)){
+								return DataDictionary.KINDCODE_20BZ;
+							}else{
+								return DataDictionary.KINDCODE_BZ;
+							}
+						}
+						if(!lossAttrCode.equals(DataDictionary.LOSSATTRCODE_ITEM_CAR)&&resultMap.containsKey(DataDictionary.KINDCODE_20B)){//非标的车上物，三者车有损失，且存在B险，返回BZ
+							//调整下新旧条款的交强险险别
+							if(kindCodeMap.containsKey(DataDictionary.KINDCODE_20BZ)){
+								return DataDictionary.KINDCODE_20BZ;
+							}else{
+								return DataDictionary.KINDCODE_BZ;
+							}
+						}
+					}else{
+						if(resultMap.containsKey(DataDictionary.KINDCODE_D4)){
+							return DataDictionary.KINDCODE_D4;
+						}else if(resultMap.containsKey(DataDictionary.KINDCODE_D3)){
+							return DataDictionary.KINDCODE_D3;
+						}else if(resultMap.containsKey(DataDictionary.KINDCODE_D2)){
+							return DataDictionary.KINDCODE_D2;
+						}else if(resultMap.containsKey(DataDictionary.KINDCODE_B)){
+							return DataDictionary.KINDCODE_B;
+						}else if(resultMap.containsKey(DataDictionary.KINDCODE_20D4)){
+							return DataDictionary.KINDCODE_20D4;
+						}else if(resultMap.containsKey(DataDictionary.KINDCODE_20D3)){
+							return DataDictionary.KINDCODE_20D3;
+						}else if(resultMap.containsKey(DataDictionary.KINDCODE_20D2)){
+							return DataDictionary.KINDCODE_20D2;
+						}else if(resultMap.containsKey(DataDictionary.KINDCODE_20B)){
+							return DataDictionary.KINDCODE_20B;
+						}
 					}
 				}
 			}
